@@ -15,16 +15,16 @@ def hash_document(document):
     return sha256(document.encode()).hexdigest()
 
 
-def encrypt(data, key):
-    aes = AES.new(bytes.fromhex(key), AES.MODE_EAX)
-    ciphertext, _ = aes.encrypt_and_digest(data)
+def encrypt(data, key, nonce=bytes([42])):
+    aes = AES.new(bytes.fromhex(key), AES.MODE_EAX, nonce=nonce)
+    ciphertext, _ = aes.encrypt_and_digest(data.encode("utf-8"))
     return ciphertext
 
 
-def decrypt(data, key):
-    aes = AES.new(bytes.fromhex(key), AES.MODE_EAX)
+def decrypt(data, key, nonce=bytes([42])):
+    aes = AES.new(bytes.fromhex(key), AES.MODE_EAX, nonce=nonce)
     plaintext = aes.decrypt(data)
-    return plaintext
+    return plaintext.decode("utf-8")
 
 
 class ProvenanceRecord:
@@ -45,7 +45,11 @@ if __name__ == "__main__":
     modifications1 = ["created"]
     document1 = "test document number 1"
     test_key_auditor = generate_key()
+    print(f"auditor key: {test_key_auditor}")
     test_key_user1 = generate_key()
+    print(f"user key {test_key_user1}")
     chain_info1 = [test_key_auditor, test_key_user1]
     sym_key1 = encrypt(test_key_user1, test_key_auditor)
+    print(f"sym_key enc: {sym_key1}")
+    print(f"sym_key dec: {decrypt(sym_key1, test_key_auditor)}")
     pr1 = ProvenanceRecord("user1", modifications1, document1, chain_info1, sym_key1)
