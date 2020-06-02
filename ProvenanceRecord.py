@@ -6,7 +6,6 @@ from enum import Enum
 
 
 # this should be updated to reflect actual application
-# maybe should be changed to enum
 class Possible_Modification(Enum):
     created = "created"
     updated = "updated"
