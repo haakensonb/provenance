@@ -3,6 +3,7 @@ from Crypto.Cipher import AES
 from Crypto.Util.Padding import pad, unpad
 from Crypto.Random import get_random_bytes
 from enum import Enum
+from copy import deepcopy
 
 
 # this should be updated to reflect actual application
@@ -45,31 +46,27 @@ class ProvenanceRecord:
 
 # temporary global for testing keys
 # actual user keys will be stored in database
-user_keys = []
-user_keys.append(get_random_bytes(16).hex())
-user_keys.append(get_random_bytes(16).hex())
+user_keys = {'user1': get_random_bytes(16).hex(), 'user2': get_random_bytes(16).hex()}
 auditor_key = get_random_bytes(16).hex()
 
 
 class Provenance:
-    def __init__(self, records=[], sym_keys=[]):
+    def __init__(self, records=[], current_record=0, sym_keys=[]):
         self.records = records
+        self.current_record = current_record
         self.sym_keys = sym_keys
 
-    def create_record(self, user_info, document):
+    def create_record(self, username, user_info, document):
         # if there aren't any records
         # then create a first record
         if not self.records:
             # User 1 information
-            user_info = encrypt(user_info, user_keys[0])
-            sym_key = encrypt(user_keys[0], auditor_key)
+            user_info = encrypt(user_info, user_keys[username])
+            sym_key = encrypt(user_keys[username], auditor_key)
             self.sym_keys.append(sym_key)
-            print(f"sym: {sym_key}")
-            print(f"usr: {user_keys[0]}")
-            print(f"aud: {auditor_key}")
             # User 1 is creator of Document
             modifications = Possible_Modification("created")
-            chain_info = [auditor_key, user_keys[0]]
+            chain_info = [auditor_key, user_keys[username]]
             hashed_document = hash_document(document)
             # create provenance record and add to record list
             self.records.append(ProvenanceRecord(
@@ -81,14 +78,20 @@ class Provenance:
             ))
 
         else:
-            pass
+            # get the chain info from the previous record
+            # not sure if deepcopy is actually needed here
+            chain_info = deepcopy(self.records[self.current_record-1].chain_info)
+            # add the current user key to the chain
+            chain_info.append(user_keys[username])
+
 
 
 if __name__ == "__main__":
     print("hello")
     # need to add checking to make sure modification is valid
     # modifications1 = ["created"]
-    user_info1 = "user1"
+    username1 = "user1"
+    user_info1 = "blah blah"
     document1 = "test document number 1"
     # test_key_auditor = generate_key()
     # print(f"auditor key: {test_key_auditor}")
@@ -100,4 +103,4 @@ if __name__ == "__main__":
     # print(f"sym_key dec: {decrypt(sym_key1, test_key_auditor)}")
     # pr1 = ProvenanceRecord("user1", modifications1, document1, chain_info1, sym_key1)
     pr = Provenance()
-    pr.create_record(user_info1, document1)
+    pr.create_record(username1, user_info1, document1)
