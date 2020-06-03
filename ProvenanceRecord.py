@@ -1,7 +1,10 @@
 from hashlib import sha256
-from Crypto.Cipher import AES
+from Crypto.Cipher import AES, PKCS1_OAEP
 from Crypto.Util.Padding import pad, unpad
 from Crypto.Random import get_random_bytes
+from Crypto.Signature import pkcs1_15
+from Crypto.Hash import SHA256
+from Crypto.PublicKey import RSA
 from enum import Enum
 from copy import deepcopy
 
@@ -33,12 +36,12 @@ def decrypt(data, key, nonce=bytes([42])):
 
 
 class ProvenanceRecord:
-    def __init__(self, user_info, modifications, hashed_document, chain_info, sym_key, checksum=None, prev=None, next=None):
+    def __init__(self, user_info, modifications, hashed_document, chain_info, Si, checksum=None, prev=None, next=None):
         self.user_info = user_info
         self.modifications = modifications
         self.hashed_document = hashed_document
         self.chain_info = chain_info
-        self.sym_key = sym_key
+        self.Si = Si
         self.checksum = checksum
         self.prev = prev
         self.next = next
@@ -46,27 +49,33 @@ class ProvenanceRecord:
 
 # temporary global for testing keys
 # actual user keys will be stored in database
-user_keys = {'user1': get_random_bytes(16).hex(), 'user2': get_random_bytes(16).hex()}
-auditor_key = get_random_bytes(16).hex()
+keyPairs = {'user1': RSA.generate(bits=3072), 'user2': RSA.generate(bits=3072)}
+sym_keys = {'user1': SHA256.new(get_random_bytes(16)).hexdigest(), 'user2': SHA256.new(get_random_bytes(16)).hexdigest()}
+auditor_keyPair = RSA.generate(bits=3072)
 
 
 class Provenance:
-    def __init__(self, records=[], current_record=0, sym_keys=[]):
+    def __init__(self, records=[], current_record=0, S=[]):
         self.records = records
         self.current_record = current_record
-        self.sym_keys = sym_keys
+        self.S = S
 
     def create_record(self, username, user_info, document):
         # if there aren't any records
         # then create a first record
         if not self.records:
             # User 1 information
-            user_info = encrypt(user_info, user_keys[username])
-            sym_key = encrypt(user_keys[username], auditor_key)
-            self.sym_keys.append(sym_key)
+            # using sym enc
+            user_info = encrypt(user_info, sym_keys[username])
+            encryptor = PKCS1_OAEP.new(auditor_keyPair.publickey())
+            Si = encryptor.encrypt(bytes.fromhex(sym_keys[username]))
+            print(f"Si: {Si}")
+            self.S.append(Si)
             # User 1 is creator of Document
             modifications = Possible_Modification("created")
-            chain_info = [auditor_key, user_keys[username]]
+            # public keys are objects, but I'm not sure if
+            # this part should use a str representation of them instead?
+            chain_info = [auditor_keyPair.publickey(), keyPairs[username].publickey()]
             hashed_document = hash_document(document)
             # create provenance record and add to record list
             self.records.append(ProvenanceRecord(
@@ -74,7 +83,7 @@ class Provenance:
                 modifications,
                 hashed_document,
                 chain_info,
-                sym_key
+                Si
             ))
 
         else:
@@ -82,7 +91,7 @@ class Provenance:
             # not sure if deepcopy is actually needed here
             chain_info = deepcopy(self.records[self.current_record-1].chain_info)
             # add the current user key to the chain
-            chain_info.append(user_keys[username])
+            chain_info.append(keyPairs[username])
 
 
 
@@ -102,5 +111,23 @@ if __name__ == "__main__":
     # print(f"sym_key enc: {sym_key1}")
     # print(f"sym_key dec: {decrypt(sym_key1, test_key_auditor)}")
     # pr1 = ProvenanceRecord("user1", modifications1, document1, chain_info1, sym_key1)
+
+    # key = RSA.generate(bits=3072)
+    # print(f"keyPair: {key}")
+    # h = SHA256.new(user_info1.encode("utf-8"))
+    # print(f"hash: {h}")
+    # signature = pkcs1_15.new(key).sign(h)
+    # print(f"signature: {signature}")
+
+    # pub = key.publickey()
+    # # binary representation of the pub key
+    # print(f"pub: {pub.export_key(format='DER')}")
+    # h = SHA256.new(b"blahblah")
+    # try:
+    #     pkcs1_15.new(pub).verify(h, signature)
+    #     print("valid sign")
+    # except (ValueError, TypeError):
+    #     print("invalid sign")
+
     pr = Provenance()
     pr.create_record(username1, user_info1, document1)
