@@ -56,6 +56,33 @@ sym_keys = {'user1': SHA256.new(get_random_bytes(16)).hexdigest(), 'user2': SHA2
 auditor_keyPair = RSA.generate(bits=3072)
 
 
+class Auditor:
+    def __init__(self, record_chain, document):
+        self.record_chain = record_chain
+        self.document = document
+
+    def audit(self):
+        # auditor hashes document
+        H = hash_document(self.document)
+        # make sure auditor's hash matches last document hash in the chain
+        if H != self.record_chain[-1].hashed_document:
+            return False
+        for i, record in enumerate(reversed(self.record_chain)):
+            # verify the current signature field
+            W = decrypt(record.checksum, sym_keys[record.username])
+            hash_str = f"{record.user_info}{record.modifications}{record.hashed_document}{record.Si.hex()}"
+            X = hash_document(hash_str)
+            if W != X:
+                return False
+            # last record in the reversed order involves auditor
+            if i == (len(self.record_chain)-1):
+                # should actually be verify not decrypt?
+                Y = decrypt(record.prev, auditor_keyPair)
+        return True
+
+
+
+
 class Provenance:
     def __init__(self, records=[], current_record=0, S=[]):
         self.records = records
@@ -67,6 +94,8 @@ class Provenance:
         signature = pkcs1_15.new(rsa_key).sign(h)
         return signature
 
+    #this need to be moved to its own class
+    @staticmethod
     def verify(self, rsa_pub_key, signature, data_str):
         h = SHA256.new(data_str.encode("utf-8"))
         try:
