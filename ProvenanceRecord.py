@@ -36,7 +36,7 @@ def decrypt(data, key, nonce=bytes([42])):
 
 
 class ProvenanceRecord:
-    def __init__(self, user_info, modifications, hashed_document, chain_info, Si, checksum=None, prev=None, next=None):
+    def __init__(self, user_info, modifications, hashed_document, chain_info, Si, checksum, prev, next=None):
         self.user_info = user_info
         self.modifications = modifications
         self.hashed_document = hashed_document
@@ -93,9 +93,12 @@ class Provenance:
             # create checksum
             modifications_str = "".join([x.value for x in modifications])
             checksum_data = f"{user_info}{modifications_str}{hashed_document}{Si.hex()}"
-            print(f"checksum_data: {checksum_data}")
             checksum = self.sign(keyPairs[username], checksum_data)
-            print(f"checksum: {checksum}")
+            # create previous digital signature
+            # missing auditor IV
+            chain_info_str = "".join([x.export_key(format='DER').hex() for x in chain_info])
+            prev_data = f"{chain_info_str}{checksum.hex()}"
+            prev = self.sign(auditor_keyPair, prev_data)
             # create provenance record and add to record list
             self.records.append(ProvenanceRecord(
                 user_info,
@@ -103,7 +106,8 @@ class Provenance:
                 hashed_document,
                 chain_info,
                 Si,
-                checksum
+                checksum,
+                prev
             ))
 
         else:
