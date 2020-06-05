@@ -8,6 +8,7 @@ from Crypto.PublicKey import RSA
 from enum import Enum
 from copy import deepcopy
 
+# very dirty code right now
 
 # this should be updated to reflect actual application
 class Possible_Modification(Enum):
@@ -36,7 +37,8 @@ def decrypt(data, key, nonce=bytes([42])):
 
 
 class ProvenanceRecord:
-    def __init__(self, user_info, modifications, hashed_document, chain_info, Si, checksum, prev, next=None):
+    def __init__(self, username, user_info, modifications, hashed_document, chain_info, Si, checksum, prev, next=None):
+        self.username = username
         self.user_info = user_info
         self.modifications = modifications
         self.hashed_document = hashed_document
@@ -92,7 +94,8 @@ class Provenance:
             hashed_document = hash_document(document)
             # create checksum
             modifications_str = "".join([x.value for x in modifications])
-            checksum_data = f"{user_info}{modifications_str}{hashed_document}{Si.hex()}"
+            operations = encrypt(modifications_str, sym_keys[username])
+            checksum_data = f"{user_info}{operations}{hashed_document}{Si.hex()}"
             checksum = self.sign(keyPairs[username], checksum_data)
             # create previous digital signature
             # missing auditor IV
@@ -101,8 +104,9 @@ class Provenance:
             prev = self.sign(auditor_keyPair, prev_data)
             # create provenance record and add to record list
             self.records.append(ProvenanceRecord(
+                username,
                 user_info,
-                modifications,
+                operations,
                 hashed_document,
                 chain_info,
                 Si,
@@ -111,11 +115,45 @@ class Provenance:
             ))
 
         else:
+            self.current_record += 1
             # get the chain info from the previous record
             # not sure if deepcopy is actually needed here
-            chain_info = deepcopy(self.records[self.current_record-1].chain_info)
+            chain_info = self.records[self.current_record-1].chain_info
             # add the current user key to the chain
-            chain_info.append(keyPairs[username])
+            chain_info.append(keyPairs[username].publickey())
+            # need to make a function for this
+            chain_info_str = "".join([x.export_key(format='DER').hex() for x in chain_info])
+            # create signature for previous record
+            prev_record = self.records[-1]
+            signature_str = f"{prev_record.hashed_document}{chain_info_str}{prev_record.checksum}"
+            prev = self.sign(keyPairs[prev_record.username], signature_str)
+            # update prev record's next value
+            prev_record.next = prev
+            # user modifies document in some way
+            # then encrypt user info
+            user_info = encrypt(user_info, sym_keys[username])
+            # list of operations performed
+            modifications = [Possible_Modification("updated")]
+            modifications_str = "".join([x.value for x in modifications])
+            operations = encrypt(modifications_str, sym_keys[username])
+            hashed_document = hash_document(document)
+             # use auditor key to enc sym key
+            encryptor = PKCS1_OAEP.new(auditor_keyPair.publickey())
+            Si = encryptor.encrypt(bytes.fromhex(sym_keys[username]))
+            self.S.append(Si)
+            checksum_data = f"{user_info}{operations}{hashed_document}{Si.hex()}"
+            checksum = self.sign(keyPairs[username], checksum_data)
+            # create record
+            self.records.append(ProvenanceRecord(
+                username,
+                user_info,
+                operations,
+                hashed_document,
+                chain_info,
+                Si,
+                checksum,
+                prev
+            ))
 
 
 
@@ -155,3 +193,4 @@ if __name__ == "__main__":
 
     pr = Provenance()
     pr.create_record(username1, user_info1, document1)
+    pr.create_record("user2", "blah balh", document1)
