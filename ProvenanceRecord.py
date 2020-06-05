@@ -60,6 +60,19 @@ class Provenance:
         self.current_record = current_record
         self.S = S
 
+    def sign(self, rsa_key, data_str):
+        h = SHA256.new(data_str.encode("utf-8"))
+        signature = pkcs1_15.new(rsa_key).sign(h)
+        return signature
+
+    def verify(self, rsa_pub_key, signature, data_str):
+        h = SHA256.new(data_str.encode("utf-8"))
+        try:
+            pkcs1_15.new(rsa_pub_key).verify(h, signature)
+            return "valid signature"
+        except (ValueError, TypeError):
+            return "invalid signature"
+
     def create_record(self, username, user_info, document):
         # if there aren't any records
         # then create a first record
@@ -67,23 +80,30 @@ class Provenance:
             # User 1 information
             # using sym enc
             user_info = encrypt(user_info, sym_keys[username])
+            # use auditor key to enc sym key
             encryptor = PKCS1_OAEP.new(auditor_keyPair.publickey())
             Si = encryptor.encrypt(bytes.fromhex(sym_keys[username]))
-            print(f"Si: {Si}")
             self.S.append(Si)
             # User 1 is creator of Document
-            modifications = Possible_Modification("created")
+            modifications = [Possible_Modification("created")]
             # public keys are objects, but I'm not sure if
             # this part should use a str representation of them instead?
             chain_info = [auditor_keyPair.publickey(), keyPairs[username].publickey()]
             hashed_document = hash_document(document)
+            # create checksum
+            modifications_str = "".join([x.value for x in modifications])
+            checksum_data = f"{user_info}{modifications_str}{hashed_document}{Si.hex()}"
+            print(f"checksum_data: {checksum_data}")
+            checksum = self.sign(keyPairs[username], checksum_data)
+            print(f"checksum: {checksum}")
             # create provenance record and add to record list
             self.records.append(ProvenanceRecord(
                 user_info,
                 modifications,
                 hashed_document,
                 chain_info,
-                Si
+                Si,
+                checksum
             ))
 
         else:
