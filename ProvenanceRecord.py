@@ -69,18 +69,23 @@ class Auditor:
             return False
         for i, record in enumerate(reversed(self.record_chain)):
             # verify the current signature field
-            W = decrypt(record.checksum, sym_keys[record.username])
+            # should make method for formatting checksum string data
             hash_str = f"{record.user_info}{record.modifications}{record.hashed_document}{record.Si.hex()}"
-            X = hash_document(hash_str)
-            if W != X:
+            sig_val = Provenance.verify(keyPairs[record.username].publickey(), record.checksum, hash_str)
+            # signature values should be enums
+            if sig_val == 'invalid signature':
                 return False
+            # if Pi = P1
             # last record in the reversed order involves auditor
             if i == (len(self.record_chain)-1):
-                # should actually be verify not decrypt?
-                Y = decrypt(record.prev, auditor_keyPair)
+                # still need to add an IV
+                chain_info_str = "".join([x.export_key(format='DER').hex() for x in record.chain_info])
+                prev_data = f"{chain_info_str}{record.checksum.hex()}"
+                prev_sig = Provenance.verify(auditor_keyPair.publickey(), record.prev, prev_data)
+                if prev_sig == 'invalid signature':
+                    return False
+            # for each previous field
         return True
-
-
 
 
 class Provenance:
@@ -94,9 +99,9 @@ class Provenance:
         signature = pkcs1_15.new(rsa_key).sign(h)
         return signature
 
-    #this need to be moved to its own class
+    # this need to be moved to its own class
     @staticmethod
-    def verify(self, rsa_pub_key, signature, data_str):
+    def verify(rsa_pub_key, signature, data_str):
         h = SHA256.new(data_str.encode("utf-8"))
         try:
             pkcs1_15.new(rsa_pub_key).verify(h, signature)
@@ -147,7 +152,8 @@ class Provenance:
             self.current_record += 1
             # get the chain info from the previous record
             # not sure if deepcopy is actually needed here
-            chain_info = self.records[self.current_record-1].chain_info
+            # shallow copy
+            chain_info = self.records[self.current_record-1].chain_info[:]
             # add the current user key to the chain
             chain_info.append(keyPairs[username].publickey())
             # need to make a function for this
@@ -223,3 +229,5 @@ if __name__ == "__main__":
     pr = Provenance()
     pr.create_record(username1, user_info1, document1)
     pr.create_record("user2", "blah balh", document1)
+    a = Auditor(pr.records, document1)
+    print(a.audit())
