@@ -9,7 +9,7 @@ import utils
 
 
 class ProvenanceRecord:
-    def __init__(self, username, user_info, modifications, hashed_document, chain_info, Si, checksum, prev, next=None):
+    def __init__(self, username, user_info, modifications, hashed_document, chain_info, Si, checksum, prev_record, next_record=None):
         self.username = username
         self.user_info = user_info
         self.modifications = modifications
@@ -17,8 +17,8 @@ class ProvenanceRecord:
         self.chain_info = chain_info
         self.Si = Si
         self.checksum = checksum
-        self.prev = prev
-        self.next = next
+        self.prev_record = prev_record
+        self.next_record = next_record
 
 
 # temporary global for testing keys
