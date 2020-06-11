@@ -1,5 +1,16 @@
 class ProvenanceRecord:
-    def __init__(self, username, user_info, modifications, hashed_document, chain_info, Si, checksum, prev_record_signature, next_record_signature=None):
+    def __init__(
+        self,
+        username,
+        user_info,
+        modifications,
+        hashed_document,
+        chain_info,
+        Si,
+        checksum,
+        prev_record_signature,
+        next_record_signature=None
+    ):
         self.username = username
         self.user_info = user_info
         self.modifications = modifications

@@ -18,7 +18,11 @@ class Auditor:
             # verify the current signature field
             # should make method for formatting checksum string data
             hash_str = f"{record.user_info}{record.modifications}{record.hashed_document}{record.Si.hex()}"
-            sig_val = Provenance.verify(keyPairs[record.username].publickey(), record.checksum, hash_str)
+            sig_val = Provenance.verify(
+                keyPairs[record.username].publickey(),
+                record.checksum,
+                hash_str
+            )
             # signature values should be enums
             if sig_val == 'invalid signature':
                 return False
@@ -30,7 +34,11 @@ class Auditor:
             # if Pi = P1
             # last record in the reversed order involves auditor
             if i == (len(self.record_chain)-1):
-                last_prev_sig = Provenance.verify(auditor_keyPair.publickey(), record.prev_record_signature, prev_data_last)
+                last_prev_sig = Provenance.verify(
+                    auditor_keyPair.publickey(),
+                    record.prev_record_signature,
+                    prev_data_last
+                )
                 if last_prev_sig == 'invalid signature':
                     return False
 
@@ -38,15 +46,20 @@ class Auditor:
                 prev_record = self.record_chain[::-1][i+1]
                 prev_data_str = f"{prev_record.hashed_document}{chain_info_str}{prev_record.checksum.hex()}"
                 # verify the previous field of the current record
-                prev_sig = Provenance.verify(keyPairs[prev_record.username].publickey(), record.prev_record_signature, prev_data_str)
+                prev_sig = Provenance.verify(
+                    keyPairs[prev_record.username].publickey(),
+                    record.prev_record_signature,
+                    prev_data_str
+                )
                 if prev_sig == 'invalid signature':
                     return False
                 # verify the next field of the next record (record order is reversed)
-                # next_record = self.record_chain[i+1]
                 # still need to add an IV
-                # next_chain_info_str = "".join([x.export_key(format='DER').hex() for x in prev_record.chain_info])
-                # next_data = f"{prev_record.hashed_document}{next_chain_info_str}{prev_record.checksum.hex()}"
-                next_sig = Provenance.verify(keyPairs[record.username].publickey(), prev_record.next_record_signature, prev_data_str)
+                next_sig = Provenance.verify(
+                    keyPairs[record.username].publickey(),
+                    prev_record.next_record_signature,
+                    prev_data_str
+                )
                 if next_sig == 'invalid signature':
                     return False
 

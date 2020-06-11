@@ -44,7 +44,10 @@ class Provenance:
             modifications = [Possible_Modification("created")]
             # public keys are objects, but I'm not sure if
             # this part should use a str representation of them instead?
-            chain_info = [auditor_keyPair.publickey(), keyPairs[username].publickey()]
+            chain_info = [
+                auditor_keyPair.publickey(),
+                keyPairs[username].publickey()
+            ]
             hashed_document = utils.hash_func(document)
             # create checksum
             modifications_str = "".join([x.value for x in modifications])
@@ -81,12 +84,16 @@ class Provenance:
             # create signature for previous record
             prev_record = self.records[self.current_record-1]
             signature_str = f"{prev_record.hashed_document}{chain_info_str}{prev_record.checksum.hex()}"
-            prev_record_signature = self.sign(keyPairs[prev_record.username], signature_str)
-            next_record_signature = self.sign(keyPairs[username], signature_str)
+            prev_record_signature = self.sign(
+                keyPairs[prev_record.username],
+                signature_str
+            )
+            next_record_signature = self.sign(
+                keyPairs[username],
+                signature_str
+            )
             # update prev record's next value
             prev_record.next_record_signature = next_record_signature
-
-            # self.records[self.current_record-1].next = self.sign(keyPairs)
             # user modifies document in some way
             # then encrypt user info
             user_info = AESUtil.encrypt(user_info, sym_keys[username])

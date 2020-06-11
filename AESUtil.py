@@ -5,7 +5,9 @@ from constants import BLOCK_SIZE
 
 def encrypt(data, key, nonce=bytes([42])):
     aes = AES.new(bytes.fromhex(key), AES.MODE_EAX, nonce=nonce)
-    ciphertext, _ = aes.encrypt_and_digest(pad(data.encode("utf-8"), BLOCK_SIZE))
+    ciphertext, _ = aes.encrypt_and_digest(
+        pad(data.encode("utf-8"), BLOCK_SIZE)
+    )
     return ciphertext.hex()
 
 
