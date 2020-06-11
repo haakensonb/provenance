@@ -1,28 +1,10 @@
-from hashlib import sha256
-from Crypto.Cipher import AES, PKCS1_OAEP
-from Crypto.Util.Padding import pad, unpad
+from Crypto.Cipher import PKCS1_OAEP
 from Crypto.Random import get_random_bytes
 from Crypto.Signature import pkcs1_15
 from Crypto.Hash import SHA256
 from Crypto.PublicKey import RSA
 from enums import Possible_Modification
-from constants import BLOCK_SIZE
-
-
-def hash_document(document):
-    return sha256(document.encode()).hexdigest()
-
-
-def encrypt(data, key, nonce=bytes([42])):
-    aes = AES.new(bytes.fromhex(key), AES.MODE_EAX, nonce=nonce)
-    ciphertext, _ = aes.encrypt_and_digest(pad(data.encode("utf-8"), BLOCK_SIZE))
-    return ciphertext.hex()
-
-
-def decrypt(data, key, nonce=bytes([42])):
-    aes = AES.new(bytes.fromhex(key), AES.MODE_EAX, nonce=nonce)
-    plaintext = aes.decrypt(bytes.fromhex(data))
-    return unpad(plaintext.decode("utf-8"), BLOCK_SIZE)
+import utils
 
 
 class ProvenanceRecord:
@@ -52,7 +34,7 @@ class Auditor:
 
     def audit(self):
         # auditor hashes document
-        H = hash_document(self.document)
+        H = utils.hash_func(self.document)
         # make sure auditor's hash matches last document hash in the chain
         if H != self.record_chain[-1].hashed_document:
             return False
@@ -132,7 +114,7 @@ class Provenance:
             # public keys are objects, but I'm not sure if
             # this part should use a str representation of them instead?
             chain_info = [auditor_keyPair.publickey(), keyPairs[username].publickey()]
-            hashed_document = hash_document(document)
+            hashed_document = utils.hash_func(document)
             # create checksum
             modifications_str = "".join([x.value for x in modifications])
             operations = encrypt(modifications_str, sym_keys[username])
@@ -181,8 +163,8 @@ class Provenance:
             modifications = [Possible_Modification("updated")]
             modifications_str = "".join([x.value for x in modifications])
             operations = encrypt(modifications_str, sym_keys[username])
-            hashed_document = hash_document(document)
-             # use auditor key to enc sym key
+            hashed_document = utils.hash_func(document)
+            # use auditor key to enc sym key
             encryptor = PKCS1_OAEP.new(auditor_keyPair.publickey())
             Si = encryptor.encrypt(bytes.fromhex(sym_keys[username]))
             self.S.append(Si)
