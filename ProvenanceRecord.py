@@ -5,19 +5,8 @@ from Crypto.Random import get_random_bytes
 from Crypto.Signature import pkcs1_15
 from Crypto.Hash import SHA256
 from Crypto.PublicKey import RSA
-from enum import Enum
-from copy import deepcopy
-
-# very dirty code right now
-
-# this should be updated to reflect actual application
-class Possible_Modification(Enum):
-    created = "created"
-    updated = "updated"
-
-
-# AES block size
-BLOCK_SIZE = 16
+from enums import Possible_Modification
+from constants import BLOCK_SIZE
 
 
 def hash_document(document):
