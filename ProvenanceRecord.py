@@ -4,6 +4,7 @@ from Crypto.Signature import pkcs1_15
 from Crypto.Hash import SHA256
 from Crypto.PublicKey import RSA
 from enums import Possible_Modification
+import AESUtil
 import utils
 
 
@@ -104,7 +105,7 @@ class Provenance:
         if not self.records:
             # User 1 information
             # using sym enc
-            user_info = encrypt(user_info, sym_keys[username])
+            user_info = AESUtil.encrypt(user_info, sym_keys[username])
             # use auditor key to enc sym key
             encryptor = PKCS1_OAEP.new(auditor_keyPair.publickey())
             Si = encryptor.encrypt(bytes.fromhex(sym_keys[username]))
@@ -117,7 +118,7 @@ class Provenance:
             hashed_document = utils.hash_func(document)
             # create checksum
             modifications_str = "".join([x.value for x in modifications])
-            operations = encrypt(modifications_str, sym_keys[username])
+            operations = AESUtil.encrypt(modifications_str, sym_keys[username])
             checksum_data = f"{user_info}{operations}{hashed_document}{Si.hex()}"
             checksum = self.sign(keyPairs[username], checksum_data)
             # create previous digital signature
@@ -158,11 +159,11 @@ class Provenance:
             # self.records[self.current_record-1].next = self.sign(keyPairs)
             # user modifies document in some way
             # then encrypt user info
-            user_info = encrypt(user_info, sym_keys[username])
+            user_info = AESUtil.encrypt(user_info, sym_keys[username])
             # list of operations performed
             modifications = [Possible_Modification("updated")]
             modifications_str = "".join([x.value for x in modifications])
-            operations = encrypt(modifications_str, sym_keys[username])
+            operations = AESUtil.encrypt(modifications_str, sym_keys[username])
             hashed_document = utils.hash_func(document)
             # use auditor key to enc sym key
             encryptor = PKCS1_OAEP.new(auditor_keyPair.publickey())
