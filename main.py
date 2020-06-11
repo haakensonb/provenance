@@ -43,7 +43,7 @@ class Auditor:
             # if Pi = P1
             # last record in the reversed order involves auditor
             if i == (len(self.record_chain)-1):
-                last_prev_sig = Provenance.verify(auditor_keyPair.publickey(), record.prev, prev_data_last)
+                last_prev_sig = Provenance.verify(auditor_keyPair.publickey(), record.prev_record_signature, prev_data_last)
                 if last_prev_sig == 'invalid signature':
                     return False
 
@@ -51,7 +51,7 @@ class Auditor:
                 prev_record = self.record_chain[::-1][i+1]
                 prev_data_str = f"{prev_record.hashed_document}{chain_info_str}{prev_record.checksum.hex()}"
                 # verify the previous field of the current record
-                prev_sig = Provenance.verify(keyPairs[prev_record.username].publickey(), record.prev, prev_data_str)
+                prev_sig = Provenance.verify(keyPairs[prev_record.username].publickey(), record.prev_record_signature, prev_data_str)
                 if prev_sig == 'invalid signature':
                     return False
                 # verify the next field of the next record (record order is reversed)
@@ -59,7 +59,7 @@ class Auditor:
                 # still need to add an IV
                 # next_chain_info_str = "".join([x.export_key(format='DER').hex() for x in prev_record.chain_info])
                 # next_data = f"{prev_record.hashed_document}{next_chain_info_str}{prev_record.checksum.hex()}"
-                next_sig = Provenance.verify(keyPairs[record.username].publickey(), prev_record.next, prev_data_str)
+                next_sig = Provenance.verify(keyPairs[record.username].publickey(), prev_record.next_record_signature, prev_data_str)
                 if next_sig == 'invalid signature':
                     return False
 
@@ -113,7 +113,7 @@ class Provenance:
             # missing auditor IV
             chain_info_str = "".join([x.export_key(format='DER').hex() for x in chain_info])
             prev_data = f"{chain_info_str}{checksum.hex()}"
-            prev = self.sign(auditor_keyPair, prev_data)
+            prev_record_signature = self.sign(auditor_keyPair, prev_data)
             # create provenance record and add to record list
             self.records.append(ProvenanceRecord(
                 username,
@@ -123,7 +123,7 @@ class Provenance:
                 chain_info,
                 Si,
                 checksum,
-                prev
+                prev_record_signature
             ))
 
         else:
@@ -139,10 +139,10 @@ class Provenance:
             # create signature for previous record
             prev_record = self.records[self.current_record-1]
             signature_str = f"{prev_record.hashed_document}{chain_info_str}{prev_record.checksum.hex()}"
-            prev = self.sign(keyPairs[prev_record.username], signature_str)
-            next = self.sign(keyPairs[username], signature_str)
+            prev_record_signature = self.sign(keyPairs[prev_record.username], signature_str)
+            next_record_signature = self.sign(keyPairs[username], signature_str)
             # update prev record's next value
-            prev_record.next = next
+            prev_record.next_record_signature = next_record_signature
 
             # self.records[self.current_record-1].next = self.sign(keyPairs)
             # user modifies document in some way
@@ -168,7 +168,7 @@ class Provenance:
                 chain_info,
                 Si,
                 checksum,
-                prev
+                prev_record_signature
             ))
 
 
