@@ -1,5 +1,4 @@
 from keys import keyPairs, auditor_keyPair
-from Provenance import Provenance
 import RSAUtil
 import utils
 
