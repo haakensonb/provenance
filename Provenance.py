@@ -43,7 +43,7 @@ class Provenance:
             # create previous digital signature
             # missing auditor IV
             chain_info_str = utils.get_chain_info_str(chain_info)
-            prev_data = f"{chain_info_str}{checksum.hex()}"
+            prev_data = utils.get_iv_signature_str(chain_info_str, checksum)
             prev_record_signature = RSAUtil.sign(auditor_keyPair, prev_data)
             # create provenance record and add to record list
             self.records.append(ProvenanceRecord(
@@ -68,7 +68,11 @@ class Provenance:
             chain_info_str = utils.get_chain_info_str(chain_info)
             # create signature for previous record
             prev_record = self.records[self.current_record-1]
-            signature_str = f"{prev_record.hashed_document}{chain_info_str}{prev_record.checksum.hex()}"
+            signature_str = utils.get_signature_str(
+                prev_record.hashed_document,
+                chain_info_str,
+                prev_record.checksum
+            )
             prev_record_signature = RSAUtil.sign(
                 keyPairs[prev_record.username],
                 signature_str

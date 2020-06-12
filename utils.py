@@ -13,5 +13,11 @@ def get_checksum_str(user_info, operations, hashed_document, Si):
     return f"{user_info}{operations}{hashed_document}{Si.hex()}"
 
 
-# signature str
+def get_signature_str(hashed_document, chain_info_str, checksum):
+    return f"{hashed_document}{chain_info_str}{checksum.hex()}"
+
+
 # iv signature str
+# still need to add iv
+def get_iv_signature_str(chain_info_str, checksum):
+    return f"{chain_info_str}{checksum.hex()}"

@@ -31,7 +31,10 @@ class Auditor:
 
             # still need to add an IV
             chain_info_str = utils.get_chain_info_str(record.chain_info)
-            prev_data_last = f"{chain_info_str}{record.checksum.hex()}"
+            prev_data_last = utils.get_iv_signature_str(
+                chain_info_str,
+                record.checksum
+            )
 
             # if Pi = P1
             # last record in the reversed order involves auditor
@@ -46,7 +49,11 @@ class Auditor:
 
             if i < (len(self.record_chain)-1):
                 prev_record = self.record_chain[::-1][i+1]
-                prev_data_str = f"{prev_record.hashed_document}{chain_info_str}{prev_record.checksum.hex()}"
+                prev_data_str = utils.get_signature_str(
+                    prev_record.hashed_document,
+                    chain_info_str,
+                    prev_record.checksum
+                )
                 # verify the previous field of the current record
                 prev_sig = RSAUtil.verify(
                     keyPairs[prev_record.username].publickey(),
