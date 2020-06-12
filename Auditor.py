@@ -16,8 +16,10 @@ class Auditor:
             return False
         for i, record in enumerate(reversed(self.record_chain)):
             # verify the current signature field
-            # should make method for formatting checksum string data
-            hash_str = f"{record.user_info}{record.modifications}{record.hashed_document}{record.Si.hex()}"
+            hash_str = utils.get_checksum_str(
+                record.user_info, record.modifications,
+                record.hashed_document, record.Si
+            )
             sig_val = RSAUtil.verify(
                 keyPairs[record.username].publickey(),
                 record.checksum,

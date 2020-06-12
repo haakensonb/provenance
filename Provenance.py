@@ -36,7 +36,9 @@ class Provenance:
             # create checksum
             modifications_str = "".join([x.value for x in modifications])
             operations = AESUtil.encrypt(modifications_str, sym_keys[username])
-            checksum_data = f"{user_info}{operations}{hashed_document}{Si.hex()}"
+            checksum_data = utils.get_checksum_str(
+                user_info, operations, hashed_document, Si
+            )
             checksum = RSAUtil.sign(keyPairs[username], checksum_data)
             # create previous digital signature
             # missing auditor IV
@@ -89,7 +91,10 @@ class Provenance:
             encryptor = PKCS1_OAEP.new(auditor_keyPair.publickey())
             Si = encryptor.encrypt(bytes.fromhex(sym_keys[username]))
             self.S.append(Si)
-            checksum_data = f"{user_info}{operations}{hashed_document}{Si.hex()}"
+            # checksum_data = f"{user_info}{operations}{hashed_document}{Si.hex()}"
+            checksum_data = utils.get_checksum_str(
+                user_info, operations, hashed_document, Si
+            )
             checksum = RSAUtil.sign(keyPairs[username], checksum_data)
             # create record
             self.records.append(ProvenanceRecord(
