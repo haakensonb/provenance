@@ -1,9 +1,8 @@
 from Crypto.Cipher import PKCS1_OAEP
-from Crypto.Signature import pkcs1_15
-from Crypto.Hash import SHA256
 from ProvenanceRecord import ProvenanceRecord
 from enums import Possible_Modification
 import AESUtil
+import RSAUtil
 import utils
 from keys import keyPairs, auditor_keyPair, sym_keys
 
@@ -13,21 +12,6 @@ class Provenance:
         self.records = records
         self.current_record = current_record
         self.S = S
-
-    def sign(self, rsa_key, data_str):
-        h = SHA256.new(data_str.encode("utf-8"))
-        signature = pkcs1_15.new(rsa_key).sign(h)
-        return signature
-
-    # this need to be moved to its own class
-    @staticmethod
-    def verify(rsa_pub_key, signature, data_str):
-        h = SHA256.new(data_str.encode("utf-8"))
-        try:
-            pkcs1_15.new(rsa_pub_key).verify(h, signature)
-            return "valid signature"
-        except (ValueError, TypeError):
-            return "invalid signature"
 
     def create_record(self, username, user_info, document):
         # if there aren't any records
@@ -53,12 +37,12 @@ class Provenance:
             modifications_str = "".join([x.value for x in modifications])
             operations = AESUtil.encrypt(modifications_str, sym_keys[username])
             checksum_data = f"{user_info}{operations}{hashed_document}{Si.hex()}"
-            checksum = self.sign(keyPairs[username], checksum_data)
+            checksum = RSAUtil.sign(keyPairs[username], checksum_data)
             # create previous digital signature
             # missing auditor IV
             chain_info_str = "".join([x.export_key(format='DER').hex() for x in chain_info])
             prev_data = f"{chain_info_str}{checksum.hex()}"
-            prev_record_signature = self.sign(auditor_keyPair, prev_data)
+            prev_record_signature = RSAUtil.sign(auditor_keyPair, prev_data)
             # create provenance record and add to record list
             self.records.append(ProvenanceRecord(
                 username,
@@ -84,11 +68,11 @@ class Provenance:
             # create signature for previous record
             prev_record = self.records[self.current_record-1]
             signature_str = f"{prev_record.hashed_document}{chain_info_str}{prev_record.checksum.hex()}"
-            prev_record_signature = self.sign(
+            prev_record_signature = RSAUtil.sign(
                 keyPairs[prev_record.username],
                 signature_str
             )
-            next_record_signature = self.sign(
+            next_record_signature = RSAUtil.sign(
                 keyPairs[username],
                 signature_str
             )
@@ -107,7 +91,7 @@ class Provenance:
             Si = encryptor.encrypt(bytes.fromhex(sym_keys[username]))
             self.S.append(Si)
             checksum_data = f"{user_info}{operations}{hashed_document}{Si.hex()}"
-            checksum = self.sign(keyPairs[username], checksum_data)
+            checksum = RSAUtil.sign(keyPairs[username], checksum_data)
             # create record
             self.records.append(ProvenanceRecord(
                 username,
