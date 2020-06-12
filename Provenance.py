@@ -40,7 +40,7 @@ class Provenance:
             checksum = RSAUtil.sign(keyPairs[username], checksum_data)
             # create previous digital signature
             # missing auditor IV
-            chain_info_str = "".join([x.export_key(format='DER').hex() for x in chain_info])
+            chain_info_str = utils.get_chain_info_str(chain_info)
             prev_data = f"{chain_info_str}{checksum.hex()}"
             prev_record_signature = RSAUtil.sign(auditor_keyPair, prev_data)
             # create provenance record and add to record list
@@ -63,8 +63,7 @@ class Provenance:
             chain_info = self.records[self.current_record-1].chain_info[:]
             # add the current user key to the chain
             chain_info.append(keyPairs[username].publickey())
-            # need to make a function for this
-            chain_info_str = "".join([x.export_key(format='DER').hex() for x in chain_info])
+            chain_info_str = utils.get_chain_info_str(chain_info)
             # create signature for previous record
             prev_record = self.records[self.current_record-1]
             signature_str = f"{prev_record.hashed_document}{chain_info_str}{prev_record.checksum.hex()}"

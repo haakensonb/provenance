@@ -29,7 +29,7 @@ class Auditor:
                 return False
 
             # still need to add an IV
-            chain_info_str = "".join([x.export_key(format='DER').hex() for x in record.chain_info])
+            chain_info_str = utils.get_chain_info_str(record.chain_info)
             prev_data_last = f"{chain_info_str}{record.checksum.hex()}"
 
             # if Pi = P1
