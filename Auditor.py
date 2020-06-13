@@ -29,7 +29,6 @@ class Auditor:
                 record.checksum,
                 hash_str
             )
-            # signature values should be enums
             if sig_val == Signature_Status.invalid.value:
                 return False
 
@@ -54,6 +53,8 @@ class Auditor:
 
             if i < (len(self.record_chain)-1):
                 prev_record = self.record_chain[::-1][i+1]
+                if prev_record.next_record_signature != record.prev_record_signature:
+                    return False
                 prev_data_str = utils.get_signature_str(
                     prev_record.hashed_document,
                     chain_info_str,

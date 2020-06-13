@@ -78,15 +78,11 @@ class Provenance:
                 prev_record.checksum
             )
             prev_record_signature = RSAUtil.sign(
-                keyPairs[prev_record.username],
-                signature_str
-            )
-            next_record_signature = RSAUtil.sign(
                 keyPairs[username],
                 signature_str
             )
             # update prev record's next value
-            prev_record.next_record_signature = next_record_signature
+            prev_record.next_record_signature = prev_record_signature
             # user modifies document in some way
             # then encrypt user info
             user_info = AESUtil.encrypt(user_info, sym_keys[username])
