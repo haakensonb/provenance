@@ -5,10 +5,12 @@ import AESUtil
 import RSAUtil
 import utils
 from keys import keyPairs, auditor_keyPair, sym_keys
+from iv import IVs
 
 
 class Provenance:
-    def __init__(self, records=[], current_record=0, S=[]):
+    def __init__(self, prov_id, records=[], current_record=0, S=[]):
+        self.prov_id = prov_id
         self.records = records
         self.current_record = current_record
         self.S = S
@@ -43,7 +45,9 @@ class Provenance:
             # create previous digital signature
             # missing auditor IV
             chain_info_str = utils.get_chain_info_str(chain_info)
-            prev_data = utils.get_iv_signature_str(chain_info_str, checksum)
+            prev_data = utils.get_iv_signature_str(
+                IVs[self.prov_id], chain_info_str, checksum
+            )
             prev_record_signature = RSAUtil.sign(auditor_keyPair, prev_data)
             # create provenance record and add to record list
             self.records.append(ProvenanceRecord(

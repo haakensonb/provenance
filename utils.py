@@ -1,4 +1,9 @@
 from Crypto.Hash import SHA256
+from Crypto.Random import get_random_bytes
+
+
+def gen_random_hex_str(num_of_bytes=16):
+    return SHA256.new(get_random_bytes(num_of_bytes)).hexdigest()
 
 
 def hash_func(input_str):
@@ -17,7 +22,5 @@ def get_signature_str(hashed_document, chain_info_str, checksum):
     return f"{hashed_document}{chain_info_str}{checksum.hex()}"
 
 
-# iv signature str
-# still need to add iv
-def get_iv_signature_str(chain_info_str, checksum):
-    return f"{chain_info_str}{checksum.hex()}"
+def get_iv_signature_str(iv, chain_info_str, checksum):
+    return f"{iv}{chain_info_str}{checksum.hex()}"

@@ -1,6 +1,7 @@
 from keys import keyPairs, auditor_keyPair
 import RSAUtil
 import utils
+from iv import IVs
 
 
 class Auditor:
@@ -8,7 +9,9 @@ class Auditor:
         self.record_chain = record_chain
         self.document = document
 
-    def audit(self):
+    # Not sure if prov_id should be passed here?
+    # Maybe change so that Auditor gets Provenance obj instead of record_chain?
+    def audit(self, prov_id):
         # auditor hashes document
         H = utils.hash_func(self.document)
         # make sure auditor's hash matches last document hash in the chain
@@ -32,6 +35,7 @@ class Auditor:
             # still need to add an IV
             chain_info_str = utils.get_chain_info_str(record.chain_info)
             prev_data_last = utils.get_iv_signature_str(
+                IVs[prov_id],
                 chain_info_str,
                 record.checksum
             )
