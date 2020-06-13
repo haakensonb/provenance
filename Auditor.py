@@ -2,6 +2,7 @@ from keys import keyPairs, auditor_keyPair
 import RSAUtil
 import utils
 from iv import IVs
+from enums import Signature_Status
 
 
 class Auditor:
@@ -29,7 +30,7 @@ class Auditor:
                 hash_str
             )
             # signature values should be enums
-            if sig_val == 'invalid signature':
+            if sig_val == Signature_Status.invalid.value:
                 return False
 
             # still need to add an IV
@@ -48,7 +49,7 @@ class Auditor:
                     record.prev_record_signature,
                     prev_data_last
                 )
-                if last_prev_sig == 'invalid signature':
+                if last_prev_sig == Signature_Status.invalid.value:
                     return False
 
             if i < (len(self.record_chain)-1):
@@ -64,7 +65,7 @@ class Auditor:
                     record.prev_record_signature,
                     prev_data_str
                 )
-                if prev_sig == 'invalid signature':
+                if prev_sig == Signature_Status.invalid.value:
                     return False
                 # verify the next field of the next record (record order is reversed)
                 # still need to add an IV
@@ -73,7 +74,7 @@ class Auditor:
                     prev_record.next_record_signature,
                     prev_data_str
                 )
-                if next_sig == 'invalid signature':
+                if next_sig == Signature_Status.invalid.value:
                     return False
 
         return True
