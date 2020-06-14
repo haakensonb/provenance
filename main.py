@@ -10,7 +10,7 @@ if __name__ == "__main__":
     document1 = "test document number 1"
     # Create IV for document.
     # This will be changed so that the Auditor is the
-    # only one with acces to it
+    # only one with acces to it.
     doc_iv = gen_random_hex_str()
     prov_id = 'prov1'
     IVs[prov_id] = doc_iv
