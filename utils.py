@@ -49,7 +49,7 @@ def get_signature_str(hashed_document, chain_info_str, checksum):
 
 def get_iv_signature_str(iv, chain_info_str, checksum):
     """
-    Returns a string with a proper formatting for the 
+    Returns a string with a proper formatting for the
     initial record signature string that includes an IV.
     """
     return f"{iv}{chain_info_str}{checksum.hex()}"
